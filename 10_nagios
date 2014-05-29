@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# author wincus@gmail.com
+# License GPLv3
+# this byobu custom status will show your nagios state in 
+# the status bar. 
+# if your nagios instance uses http authentication you will 
+# need to create the file ~/.wgetrc with the credentials
+# Configure your Nagios Server in the statusrc file
+
+set -e
+
+if [ -f ${BYOBU_CONFIG_DIR}/statusrc ]; then
+	. ${BYOBU_CONFIG_DIR}/statusrc
+fi
+
+if [ -z $NAGIOS_SERVER ]; then
+	exit 0
+fi
+
+OUTPUT=$(wget -q -O - ${NAGIOS_SERVER}'/cgi-bin/nagios3/status.cgi?host=all&type=detail&hoststatustypes=3&serviceprops=42&servicestatustypes=28')
+SERVS=$(echo "${OUTPUT}" | egrep -A 4 "serviceTotalsOK")
+HOSTS=$(echo "${OUTPUT}" | egrep -A 3 "hostTotalsUP")
+
+# service mapping
+SERVS_COLOR[1]="#[fg=green,bold]"  #ok
+SERVS_COLOR[2]="#[fg=yellow,bold]" #warning
+SERVS_COLOR[3]=""                  #unknown
+SERVS_COLOR[4]="#[fg=red,bold]"    #critical
+SERVS_COLOR[5]=""                  #pending
+
+# host mapping
+HOST_COLOR[1]="#[fg=green,bold]"  #up
+HOST_COLOR[2]="#[fg=red,bold]"    #down
+HOST_COLOR[3]="#[fg=yellow,bold]" #unreacheable
+HOST_COLOR[4]=""                  #pending
+
+COUNT=1
+IFS='
+'
+
+for line in $HOSTS
+do
+	if [ ! -z ${HOST_COLOR[$COUNT]} ]; then
+
+		VALUE=$(echo -n $line | tr -d -c "[:digit:]")
+
+		if [ $VALUE -eq 0 ]; then
+			break
+		fi
+
+		if [ $COUNT -gt 1 ]; then
+			echo -n "/"
+		else
+			echo -n "H·"
+		fi
+
+		echo "${HOST_COLOR[$COUNT]}${VALUE}#[default]"
+	fi
+
+	COUNT=$((COUNT+1))
+done
+
+COUNT=1
+
+for line in $SERVS
+do
+	if [ ! -z ${SERVS_COLOR[$COUNT]} ]; then
+
+		VALUE=$(echo -n $line | tr -d -c "[:digit:]")
+
+		if [ $VALUE -eq 0 ]; then
+			break
+		fi
+
+		if [ $COUNT -gt 1 ]; then
+			echo -n "/"
+		else
+			echo -n " S·"
+		fi
+
+		echo "${SERVS_COLOR[$COUNT]}${VALUE}#[default]"
+	fi
+
+	COUNT=$((COUNT+1))
+done
+
+exit 0
