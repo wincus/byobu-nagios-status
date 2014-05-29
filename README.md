@@ -3,5 +3,5 @@ in byobu status line.
 
 Screenshots
 -----------
-.. image:: http://imgur.com/7OfFBYp
+![screenshot](http://imgur.com/7OfFBYp)
 
