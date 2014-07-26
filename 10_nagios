@@ -18,7 +18,7 @@ if [ -z $NAGIOS_SERVER ]; then
 	exit 0
 fi
 
-OUTPUT=$(wget -q -O - ${NAGIOS_SERVER}'/cgi-bin/nagios3/status.cgi?host=all&type=detail&hoststatustypes=3&serviceprops=42&servicestatustypes=28')
+OUTPUT=$(wget --tries=1 --timeout=5 -q -O - ${NAGIOS_SERVER}'/cgi-bin/nagios3/status.cgi?host=all&type=detail&hoststatustypes=3&serviceprops=42&servicestatustypes=28')
 SERVS=$(echo "${OUTPUT}" | egrep -A 4 "serviceTotalsOK")
 HOSTS=$(echo "${OUTPUT}" | egrep -A 3 "hostTotalsUP")
 
@@ -46,7 +46,8 @@ do
 		VALUE=$(echo -n $line | tr -d -c "[:digit:]")
 
 		if [ $VALUE -eq 0 ]; then
-			break
+			COUNT=$((COUNT+1))
+			continue
 		fi
 
 		if [ $COUNT -gt 1 ]; then
@@ -70,7 +71,8 @@ do
 		VALUE=$(echo -n $line | tr -d -c "[:digit:]")
 
 		if [ $VALUE -eq 0 ]; then
-			break
+			COUNT=$((COUNT+1))
+			continue
 		fi
 
 		if [ $COUNT -gt 1 ]; then
